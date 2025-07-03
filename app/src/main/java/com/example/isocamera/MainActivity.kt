@@ -68,16 +68,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        logFile = File(getExternalFilesDir(null), "ISO_Log_$timeStamp.csv")
-
-        try {
-            logWriter = FileWriter(logFile, true)
-            logWriter.write("Timestamp,ISO\n")
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-
         startBackgroundThread()
 
         recordButton.setOnClickListener {
@@ -134,8 +124,9 @@ class MainActivity : AppCompatActivity() {
 
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
 
-        val outputFile = File(getExternalFilesDir(null), "recorded_video.mp4")
+        val outputFile = File(getExternalFilesDir(null), "recorded_video_$timeStamp.mp4")
         mediaRecorder.setOutputFile(outputFile.absolutePath)
 
         mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
@@ -143,13 +134,19 @@ class MainActivity : AppCompatActivity() {
         mediaRecorder.setVideoFrameRate(30)
         mediaRecorder.setVideoSize(1920, 1080)
 
+        logFile = File(getExternalFilesDir(null), "ISO_Log_$timeStamp.csv")
+        try {
+            logWriter = FileWriter(logFile, true)
+            logWriter.write("Timestamp,ISO\n")
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
         try {
             mediaRecorder.prepare()
         } catch (e: IOException) {
             e.printStackTrace()
             return
         }
-
         startRecordingSession()
     }
 
@@ -206,6 +203,7 @@ class MainActivity : AppCompatActivity() {
                 mediaRecorder.reset()
                 isRecording = false
                 startPreview()
+                logWriter.close()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -273,24 +271,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun closeCamera() {
-        try {
-            captureSession?.stopRepeating()
-            captureSession?.close()
-            cameraDevice.close()
-            captureSession = null
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     override fun onDestroy() {
         super.onDestroy()
-        try {
-            logWriter.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+//        try {
+//            logWriter.close()
+//        } catch (e: IOException) {
+//            e.printStackTrace()
+//        }
         stopBackgroundThread()
     }
 }
