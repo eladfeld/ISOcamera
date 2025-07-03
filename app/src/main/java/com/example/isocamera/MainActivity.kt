@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
 
         try {
             logWriter = FileWriter(logFile, true)
-            logWriter.write("Timestamp,ISO,ExposureTime(ns)\n")
+            logWriter.write("Timestamp,ISO\n")
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -135,18 +135,8 @@ class MainActivity : AppCompatActivity() {
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
 
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val outputFile = File(getExternalFilesDir(null), "recorded_video_$timeStamp.mp4")
+        val outputFile = File(getExternalFilesDir(null), "recorded_video.mp4")
         mediaRecorder.setOutputFile(outputFile.absolutePath)
-
-        // Create a new log file per recording
-        logFile = File(getExternalFilesDir(null), "ISO_Log_$timeStamp.csv")
-        try {
-            logWriter = FileWriter(logFile, true)
-            logWriter.write("Timestamp,ISO,ExposureTime(ns)\n")
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
 
         mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
         mediaRecorder.setVideoEncodingBitRate(10000000)
@@ -160,9 +150,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        openCamera()
+        startRecordingSession()
     }
-
 
     private fun startRecordingSession() {
         recorderSurface = mediaRecorder.surface
@@ -202,11 +191,9 @@ class MainActivity : AppCompatActivity() {
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
             val iso = result.get(CaptureResult.SENSOR_SENSITIVITY)
-            val exposureTime = result.get(CaptureResult.SENSOR_EXPOSURE_TIME) // in nanoseconds
             val timestamp = System.currentTimeMillis()
-
             if (iso != null && isRecording) {
-                logISOandShutterSpeed(timestamp, iso, exposureTime)
+                logISO(timestamp, iso)
             }
         }
     }
@@ -264,10 +251,10 @@ class MainActivity : AppCompatActivity() {
         backgroundThread.join()
     }
 
-    private fun logISOandShutterSpeed(timestamp: Long, iso: Int, exposureTime: Long?) {
-        Log.d(TAG, "Logging ISO: $iso, Shutter Speed: $exposureTime ns at $timestamp")
+    private fun logISO(timestamp: Long, iso: Int) {
+        Log.d(TAG, "Logging ISO: $iso at $timestamp")
         try {
-            logWriter.write("$timestamp,$iso,$exposureTime\n")
+            logWriter.write("$timestamp,$iso\n")
             logWriter.flush()
         } catch (e: IOException) {
             e.printStackTrace()
@@ -286,16 +273,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//    private fun closeCamera() {
-//        try {
-//            captureSession?.stopRepeating()
-//            captureSession?.close()
-//            cameraDevice.close()
-//            captureSession = null
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//        }
-//    }
+    private fun closeCamera() {
+        try {
+            captureSession?.stopRepeating()
+            captureSession?.close()
+            cameraDevice.close()
+            captureSession = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
