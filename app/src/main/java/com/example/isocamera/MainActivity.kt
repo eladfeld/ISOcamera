@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         logFile = File(getExternalFilesDir(null), "ISO_Log_$timeStamp.csv")
         try {
             logWriter = FileWriter(logFile, true)
-            logWriter.write("Timestamp,ISO\n")
+            logWriter.write("Timestamp,ISO,ShutterSpeed(ns)\n")
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -188,9 +188,10 @@ class MainActivity : AppCompatActivity() {
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
             val iso = result.get(CaptureResult.SENSOR_SENSITIVITY)
+            val shutterSpeed = result.get(CaptureResult.SENSOR_EXPOSURE_TIME)
             val timestamp = System.currentTimeMillis()
             if (iso != null && isRecording) {
-                logISO(timestamp, iso)
+                logISO(timestamp, iso, shutterSpeed)
             }
         }
     }
@@ -249,10 +250,10 @@ class MainActivity : AppCompatActivity() {
         backgroundThread.join()
     }
 
-    private fun logISO(timestamp: Long, iso: Int) {
+    private fun logISO(timestamp: Long, iso: Int, shutterSpeed: Long?) {
         Log.d(TAG, "Logging ISO: $iso at $timestamp")
         try {
-            logWriter.write("$timestamp,$iso\n")
+            logWriter.write("$timestamp,$iso,$shutterSpeed\n")
             logWriter.flush()
         } catch (e: IOException) {
             e.printStackTrace()
